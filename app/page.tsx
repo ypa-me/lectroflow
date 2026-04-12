@@ -1,64 +1,247 @@
-import Image from "next/image";
+'use client'
+
+import FullCalendar from '@fullcalendar/react'
+import dayGridPlugin from '@fullcalendar/daygrid'
+import interactionPlugin from '@fullcalendar/interaction'
+import pb from "@/lib/pocketbase";
+import { useState, useEffect, useMemo } from 'react'
+
+interface EventData {
+  id: string;
+  title: string;
+  start: string;
+  extendedProps: {
+    message: string;
+    price: number;
+    confirmation: boolean;
+  };
+}
+
+interface EventDetailPopupProps {
+  event: EventData | null;
+  position: { x: number; y: number } | null;
+}
+
+function EventDetailPopup({ event, position }: EventDetailPopupProps) {
+  if (!event || !position) return null;
+
+  return (
+    <div
+      className="fixed z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-[250px] max-w-[350px] animate-in fade-in zoom-in duration-200"
+      style={{
+        left: position.x,
+        top: position.y,
+      }}
+    >
+      <h3 className="font-semibold text-lg mb-2 text-gray-900 border-b pb-2">{event.title}</h3>
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between">
+          <span className="text-gray-500">Message:</span>
+          <span className="text-gray-900 max-w-[200px] break-words">{event.extendedProps.message}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Price:</span>
+          <span className="text-gray-900 font-medium">${event.extendedProps.price}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Confirmation:</span>
+          <span className={`font-medium ${event.extendedProps.confirmation ? 'text-green-600' : 'text-red-500'}`}>
+            {event.extendedProps.confirmation ? '✓ Confirmed' : '✗ Pending'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-gray-500">Date:</span>
+          <span className="text-gray-900">{new Date(event.start).toLocaleDateString()}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TodaysEvents({ events }: { events: EventData[] }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const todaysEvents = useMemo(() => {
+    return events.filter(event => {
+      const eventDate = new Date(event.start);
+      eventDate.setHours(0, 0, 0, 0);
+      return eventDate.getTime() === today.getTime();
+    });
+  }, [events]);
+
+  return (
+    <div className="h-full flex flex-col">
+      <h2 className="text-xl font-bold mb-4 text-gray-900 pb-2 border-b-2 border-gray-200">
+        Due Today ({todaysEvents.length})
+      </h2>
+      <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+        {todaysEvents.length === 0 ? (
+          <p className="text-gray-500 text-center py-8 italic">No events due today</p>
+        ) : (
+          todaysEvents.map((event) => (
+            <div
+              key={event.id}
+              className="bg-gray-50 border-l-4 border-blue-500 rounded-r-lg p-3 hover:bg-gray-100 transition-colors cursor-pointer group"
+            >
+              <h3 className="font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">
+                {event.title}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1 line-clamp-2">{event.extendedProps.message}</p>
+              <div className="flex justify-between items-center mt-2 text-xs">
+                <span className="font-medium text-gray-900">${event.extendedProps.price}</span>
+                <span className={`px-2 py-1 rounded-full ${event.extendedProps.confirmation ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {event.extendedProps.confirmation ? 'Confirmed' : 'Pending'}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
+  const [events, setEvents] = useState<EventData[]>([])
+  const [hoveredEvent, setHoveredEvent] = useState<EventData | null>(null)
+  const [popupPosition, setPopupPosition] = useState<{ x: number; y: number } | null>(null)
+
+  useEffect(() => {
+    async function fetchEvents() {
+      await pb.collection('Admins').authWithPassword('admin@local.com', '123456789')
+
+      const records = await pb.collection('Orders').getFullList({
+        sort: 'Deadline',
+      })
+
+      const mapped = records.map((r: any) => ({
+        id: r.id,
+        title: r.Title,
+        start: r.Deadline,
+        extendedProps: {
+          message: r.Message,
+          price: r.Price,
+          confirmation: r.Confirmation,
+        },
+      }))
+
+      setEvents(mapped)
+    }
+
+    fetchEvents()
+  }, [])
+
+  const calculatePopupPosition = (clientX: number, clientY: number) => {
+    const popupWidth = 350;
+    const popupHeight = 200;
+    const padding = 10;
+    
+    // Calculate X position - keep within viewport
+    let x = clientX + padding;
+    if (x + popupWidth > window.innerWidth) {
+      x = clientX - popupWidth - padding;
+    }
+    if (x < padding) {
+      x = padding;
+    }
+    
+    // Calculate Y position - show above if near bottom
+    let y = clientY + padding;
+    if (y + popupHeight > window.innerHeight) {
+      y = clientY - popupHeight - padding;
+    }
+    if (y < padding) {
+      y = padding;
+    }
+    
+    return { x, y };
+  }
+
+  const handleEventMouseEnter = (info: any) => {
+    const eventData: EventData = {
+      id: info.event.id,
+      title: info.event.title,
+      start: info.event.startStr,
+      extendedProps: info.event.extendedProps,
+    }
+    setHoveredEvent(eventData)
+    setPopupPosition(calculatePopupPosition(info.jsEvent.clientX, info.jsEvent.clientY))
+  }
+
+  const handleEventMouseLeave = () => {
+    setHoveredEvent(null)
+    setPopupPosition(null)
+  }
+
+  const handleEventClick = (info: any) => {
+    const eventData: EventData = {
+      id: info.event.id,
+      title: info.event.title,
+      start: info.event.startStr,
+      extendedProps: info.event.extendedProps,
+    }
+    setHoveredEvent(eventData)
+    setPopupPosition(calculatePopupPosition(info.jsEvent.clientX, info.jsEvent.clientY))
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
+    <div className="bg-black font-sans min-h-screen">
+      <EventDetailPopup event={hoveredEvent} position={popupPosition} />
+      
+      <main className="w-full min-h-screen bg-white text-black mt-[25px] mb-[5px]">
+        <section className="min-h-[calc(100vh-15px)] w-full p-4 lg:p-6">
+          {/* Responsive Grid Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full min-h-[calc(100vh-3rem)]">
+            
+            {/* Calendar Section - Takes full width on mobile, 8/12 on desktop */}
+            <div className="lg:col-span-8 xl:col-span-9 flex flex-col">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex-1 min-h-[500px] lg:min-h-0">
+                <FullCalendar
+                  plugins={[dayGridPlugin, interactionPlugin]}
+                  initialView='dayGridMonth'
+                  height="100%"
+                  events={events}
+                  eventMouseEnter={handleEventMouseEnter}
+                  eventMouseLeave={handleEventMouseLeave}
+                  eventClick={handleEventClick}
+                  eventContent={(arg) => {
+                    const isConfirmed = arg.event.extendedProps.confirmation
+                    return (
+                      <div className={`px-2 py-1 rounded text-xs font-medium truncate cursor-pointer transition-all hover:scale-105 ${
+                        isConfirmed 
+                          ? 'bg-green-100 text-green-800 border border-green-200' 
+                          : 'bg-amber-100 text-amber-800 border border-amber-200'
+                      }`}>
+                        <div className="flex items-center gap-1">
+                          <span className={`w-2 h-2 rounded-full ${isConfirmed ? 'bg-green-500' : 'bg-amber-500'}`}></span>
+                          <span className="truncate">{arg.event.title}</span>
+                        </div>
+                      </div>
+                    )
+                  }}
+                  headerToolbar={{
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,dayGridWeek'
+                  }}
+                  buttonText={{
+                    today: 'Today',
+                    month: 'Month',
+                    week: 'Week'
+                  }}
+                />
+              </div>
+            </div>
+
+            {/* Today's Events Sidebar - Takes full width on mobile, 4/12 on desktop */}
+            <div className="lg:col-span-4 xl:col-span-3">
+              <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-full min-h-[300px] lg:min-h-0">
+                <TodaysEvents events={events} />
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
   );
