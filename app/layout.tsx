@@ -41,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${ppmori.variable} ${jetbrains.variable} ${Libre.variable} ${Hand.variable} overflow-x-hidden no-scrollbar`}>
-      <body className="overflow-clip">
+      <body className="lg:overflow-hidden lg:h-screen lg:max-h-screen">
         <header className="fixed top-0 left-0 w-full h-12 flex items-center bg-black z-[100]">
   <div className=" absolute left-0">
     <Image
@@ -62,7 +62,7 @@ export default function RootLayout({
 </header>
         
         
-        <main className ="flex-1 bg-black">{children}</main>
+        <main className="flex-1 bg-black lg:overflow-hidden lg:h-[calc(100vh-48px)]">{children}</main>
         <footer className=" align-left   dark:border-zinc-700 bg-black ">
           
         

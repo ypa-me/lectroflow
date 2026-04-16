@@ -186,13 +186,13 @@ export default function Home() {
   }
 
   return (
-    <div className="bg-black font-sans min-h-screen">
+    <div className="bg-black font-sans h-full lg:overflow-hidden">
       <EventDetailPopup event={hoveredEvent} position={popupPosition} />
       
-      <main className="w-full min-h-screen bg-white text-black mt-[25px] mb-[5px]">
-        <section className="min-h-[calc(100vh-15px)] w-full p-4 lg:p-6">
+      <main className="w-full h-full bg-white text-black mt-[25px]">
+        <section className="lg:h-[calc(100%-25px)] w-full p-4 lg:p-6 lg:overflow-hidden">
           {/* Responsive Grid Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full min-h-[calc(100vh-3rem)]">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
             
             {/* Calendar Section - Takes full width on mobile, 8/12 on desktop */}
             <div className="lg:col-span-8 xl:col-span-9 flex flex-col">
@@ -234,7 +234,7 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Today's Events Sidebar - Takes full width on mobile, 4/12 on desktop */}
+            
             <div className="lg:col-span-4 xl:col-span-3">
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-full min-h-[300px] lg:min-h-0">
                 <TodaysEvents events={events} />
