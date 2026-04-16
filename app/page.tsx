@@ -189,8 +189,8 @@ export default function Home() {
     <div className="bg-black font-sans h-full lg:overflow-hidden">
       <EventDetailPopup event={hoveredEvent} position={popupPosition} />
       
-      <main className="w-full h-full bg-white text-black mt-[25px]">
-        <section className="lg:h-[calc(100%-25px)] w-full p-4 lg:p-6 lg:overflow-hidden">
+      <main className="w-full h-full bg-white text-black">
+        <section className="h-full w-full p-4 lg:p-6 lg:overflow-hidden">
           {/* Responsive Grid Layout */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 h-full">
             
