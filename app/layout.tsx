@@ -42,7 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${ppmori.variable} ${jetbrains.variable} ${Libre.variable} ${Hand.variable} overflow-x-hidden no-scrollbar`}>
       <body className="h-screen max-h-screen flex flex-col lg:overflow-hidden">
-        <header className="flex-none h-12 flex items-center bg-black z-[100]">
+        <header className="flex-none h-12 flex items-center bg-white z-[100]">
           <div className="absolute left-0">
             <Image
               src="/Black Outline Light.png"
@@ -54,7 +54,7 @@ export default function RootLayout({
             />
           </div>
           <div className="absolute right-4 flex flex-row gap-2 items-center">
-              <Link href="https://ypa.one" className="relative bg-white/1 font-mono text-xs w-auto h-auto text-center p-2 backdrop-blur-0.5 border border-white/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),0_0_20px_rgba(0,0,0,0.4)] ring-1 ring-white/5 ring-inset rounded-md overflow-hidden group transition-all duration-300 hover:scale-[1.02] hover:bg-gray-500/50 hover:border-white/30 hover:backdrop-blur-xl hover:shadow-2xl hover:shadow-gray-500/20">
+              <Link href="https://ypa.one" className="relative bg-black font-mono text-xs w-auto h-auto text-center p-2 backdrop-blur-0.5 border border-white/20 shadow-[inset_0_1px_0_0_rgba(255,255,255,0.6),0_0_20px_rgba(0,0,0,0.4)] ring-1 ring-white/5 ring-inset rounded-md overflow-hidden group transition-all duration-300 hover:scale-[1.02] hover:bg-gray-500/50 hover:border-white/30 hover:backdrop-blur-xl hover:shadow-2xl hover:shadow-gray-500/20">
                 Work With Me
               </Link>
             </div>
